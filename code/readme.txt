@@ -1,0 +1,1 @@
+In order for the programm to work you need to install OpenCV via: pip install opencv-python
