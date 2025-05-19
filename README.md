@@ -23,10 +23,10 @@
 ---
 ## Compatability
 ### This code currently only works on:
-| Platform | Tested & Supported |
-|:----------------:|:-------:|
-|Windows 10 and higher|✅|
-|Raspberry Pi 4b 2GB and higher|✅|
+| Platform | v2 | v3 |
+|:----------------:|:-------:|:-------:|
+|Windows 10 and higher|✅|❌|
+|Raspberry Pi 4b 2GB and higher|✅|✅|
 ---
 ## Robocup Junior Rescue Line:
 ### Its our goal to compete at Robocup Junior Rescue Line 2025 in Innsbruck 🏔️🇦🇹.
