@@ -19,6 +19,7 @@ Disclaimer: This programm wont work just right now. It's currently in developmen
 |Green - More than 3 dots|✅|❌|
 |Obstacle avoidance|❌|❌|
 |Rescue-zone detection |❌|❌|
+|Motor control |❌|❌|
 ---
 ## Compatability
 ### This code currently only works on:
