@@ -1,5 +1,6 @@
 import cv2  # Import OpenCV for image processing
 import numpy as np  # Import NumPy for numerical operations
+import save_img # Import custom module for saving images
 
 # PID parameters for line following control
 Kp = 0.6  # Proportional gain
@@ -175,11 +176,13 @@ def process_frame(frame):
         else:
             print("Intersection but no green Element, drive forward")
 
+    
     # Return thresholded image, visualization frame, centroid list, and green mask
     return threshold, output_frame, cx_list, green_mask
 
 def main():
     cap = cv2.VideoCapture(0)  # Open the default camera
+    saver = save_img.save_img()  # Use a different name than the module
 
     if not cap.isOpened():
         print("Error: Could not open camera.")
@@ -193,6 +196,7 @@ def main():
 
             # Process the frame for line and green detection
             threshold_img, visualized_frame, x_values, green_mask = process_frame(frame)
+            x_avg = int(np.mean(x_values))  # Average x-coordinate 
 
             # Show the thresholded image
             cv2.imshow("Threshold", threshold_img)
@@ -201,8 +205,11 @@ def main():
             # Show the green mask
             cv2.imshow("Green Mask", green_mask)
 
+            saver.save(visualized_frame, frame, x_avg)  # Use the new variable
+
             # Exit the loop if 'q' is pressed
             if cv2.waitKey(1) & 0xFF == ord('q'):
+                saver.close_file()  # Use the new variable
                 break
 
     except KeyboardInterrupt:
