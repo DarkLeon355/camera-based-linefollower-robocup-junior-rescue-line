@@ -22,7 +22,7 @@
 |Motor control |❌|❌|
 ---
 ## Compatability
-### This code currently only works on:
+### This code currently only works on (tested):
 | Platform | v2 | v3 |
 |:----------------:|:-------:|:-------:|
 |Windows 10 and higher|✅|❌|
