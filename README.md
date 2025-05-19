@@ -10,6 +10,7 @@ Disclaimer: This programm wont work just right now. It's currently in developmen
 |:----------------:|:-------:|:-------:|
 |Line detection|❌|✅|
 |Green detection|❌|✅|
+|Frame saving|❌|✅|
 |Intersection detection|❌|✅|
 |Green - Turn left|❌|✅|
 |Green - Turn right|❌|✅|
