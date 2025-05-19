@@ -19,7 +19,7 @@ Disclaimer: This programm wont work just right now. It's currently in developmen
 ---
 ## Robocup Junior Rescue Line
 ---
-Its our goal to compete at Robocup Junior Rescue Line 2025 in Innsbruck 🏔️.
+Its our goal to compete at Robocup Junior Rescue Line 2025 in Innsbruck 🏔️🇦🇹.
 ---
 ## License
 ---
