@@ -16,4 +16,8 @@ Disclaimer: This programm wont work just right now. It's currently in developmen
 |Green - Turn right|❌|✅|
 |Green - 180° Turn|❌|✅|
 |Green - More than 3 dots|✅|❌|
-
+---
+##Robocup Junior Rescue Line
+---
+Its our goal to compete at Robocup Junior Rescue Line 2025 in Innsbruck 🏔️.
+---
