@@ -15,7 +15,7 @@ GREEN_JUMP_TOLERANCE = 50  # Adjust as needed (pixels)
 MIN_GREEN_DOT_AREA = 200  # Minimum area for a green dot to be considered valid
 
 def set_motor_speed(left_speed, right_speed):
-    # Dummy function for Windows (does nothing, just a placeholder)
+    # Dummy function
     return 0
 
 def process_frame(frame):
@@ -24,7 +24,7 @@ def process_frame(frame):
 
     # Convert the frame to HSV color space for green detection
     hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-    # Define lower and upper bounds for green color in HSV
+    # Define lower and upper threshold for green color in HSV
     lower_green = np.array([35, 40, 40])
     upper_green = np.array([85, 255, 255])
 
@@ -147,20 +147,41 @@ def process_frame(frame):
                     cy_green = int(M_green["m01"] / M_green["m00"])
                     green_dots.append((cx_green, cy_green, cnt, area))
 
+        if len(green_dots) > 2:
+            print("Detected more than 2 green dots, checking for the lowest one...")
+            #detected more than 2 green dots, the ones with the lowest y coordinate are the ones we want
+            #there are 3 cases now: there is one lowest green dot at the left hand side of the line, -> turn left
+            #there is one lowest green dot at the right hand side of the line, -> turn right
+            #there are two lowest green dots, one at the left hand side of the line and one at the right hand side of the line -> turn 180 degrees
+            #in order to differtiate between those dots we have to sorty them by their y values
+            green_dots.sort(key=lambda x: x[1])  # Sort by y-coordinate
+            # now we have to check if two of those dots are on the same height, if so we have to turn by 180 degrees
+            if green_dots[0][1] - green_dots[1][1] < 20 or green_dots[1][1] - green_dots[0][1] < 20:
+                # the lowest two dots are on the same height which means we have to turn by 180 degrees
+                print("Two green lowest dots at the same height, Turn 180 degrees!")
+                prev_cx_green = None  # Reset tracking after a 180
+            
+            else: #this means there is only one lowest green dot
+                #check if the lowest green dot is on the left or right side of the line
+                cx_green, cy_green, cnt, area = green_dots[0]
+                closest_idx = np.argmin(np.abs(np.array(y_levels) - cy_green))
+                cx_at_green = cx_list[closest_idx]
+                if cx_green < cx_at_green - 20:
+                    print("Green dot left of the line at this height: Turn left!")
+                    # Insert your left turn code here
+                elif cx_green > cx_at_green + 20:
+                    print("Green dot right of the line at this height: Turn right!")
+                    # Insert your right turn code here
+
+
+
         # 180-degree turn if two or more valid green dots
-        if len(green_dots) >= 2:
+        if len(green_dots) == 2:
             print("Turn 180 degrees!")
             prev_cx_green = None  # Reset tracking after a 180
         elif len(green_dots) == 1:
             cx_green, cy_green, cnt, area = green_dots[0]
-            # Prevent drastic jumps
-            if prev_cx_green is not None and abs(cx_green - prev_cx_green) > GREEN_JUMP_TOLERANCE:
-                print(f"Green dot jump too large (from {prev_cx_green} to {cx_green}), ignoring this frame.")
-                # Optionally, you can skip action or use prev_cx_green instead
-                cx_green = prev_cx_green
-            else:
-                prev_cx_green = cx_green  # Update only if not a drastic jump
-
+            
             # Find the y in y_levels closest to cy_green
             closest_idx = np.argmin(np.abs(np.array(y_levels) - cy_green))
             cx_at_green = cx_list[closest_idx]
@@ -193,6 +214,7 @@ def main():
 
     try:
         while True:
+            time.sleep(1)
             time1 = time.time()
             ret, frame = cap.read()  # Read a frame from the camera
             if not ret:
