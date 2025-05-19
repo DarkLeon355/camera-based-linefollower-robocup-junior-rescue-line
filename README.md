@@ -21,7 +21,11 @@ Disclaimer: This programm wont work just right now. It's currently in developmen
 |Rescue-zone detection |❌|❌|
 ---
 ## Compatability
-### This code currently only works on windows with a fuctional default camera.
+### This code currently only works on:
+| Platform | Tested & Supported |
+|:----------------:|:-------:|
+|Windows 10 and higher|✅|
+|Raspberry Pi 4b 2GB and higher|✅|
 ---
 ## Robocup Junior Rescue Line:
 ### Its our goal to compete at Robocup Junior Rescue Line 2025 in Innsbruck 🏔️🇦🇹.
