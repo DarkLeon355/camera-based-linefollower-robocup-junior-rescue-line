@@ -20,6 +20,9 @@ Disclaimer: This programm wont work just right now. It's currently in developmen
 |Obstacle avoidance|❌|❌|
 |Rescue-zone detection |❌|❌|
 ---
+## Compatability
+### This code currently only works on windows with a fuctional default camera.
+---
 ## Robocup Junior Rescue Line:
 ### Its our goal to compete at Robocup Junior Rescue Line 2025 in Innsbruck 🏔️🇦🇹.
 ---
