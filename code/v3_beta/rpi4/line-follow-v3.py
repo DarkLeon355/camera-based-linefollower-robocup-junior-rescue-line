@@ -13,7 +13,7 @@ class LineFollow:
         self.integral = 0
 
         # Minimum green dot area to filter noise
-        self.MIN_GREEN_DOT_AREA = 200
+        self.MIN_GREEN_DOT_AREA = 400
         self.MIN_LINE_AREA = 200
 
         # Camera setup
@@ -117,23 +117,27 @@ class LineFollow:
                     cy_green = int(M_green["m01"] / M_green["m00"])
                     green_dots.append((cx_green, cy_green))
 
+
         if junction_center:
             junction_x, junction_y = junction_center
-            filtered_dots = [dot for dot in green_dots if dot[1] <= junction_y]
+            filtered_dots = []
+            for dot in green_dots:
+                if dot[1] > junction_y:
+                    filtered_dots.append(dot)
+            if len(filtered_dots) > 0:
+                for dot in filtered_dots: cv2.circle(output_frame, dot, 5, (0, 0, 255), -1)
             if len(filtered_dots) == 2:
                 print("Turn 180°!")
             elif len(filtered_dots) == 1:
                 cx_green, cy_green = filtered_dots[0]
                 closest_idx = np.argmin(np.abs(np.array(y_levels) - cy_green))
                 cx_at_green = cx_list[closest_idx]
-                if cx_green < cx_at_green - 40:
+                if cx_green < cx_at_green - 20:
                     print("Green dot left of the line: Turn left!")
-                elif cx_green > cx_at_green + 40:
+                elif cx_green > cx_at_green + 20:
                     print("Green dot right of the line: Turn right!")
-                else:
-                    print("Green dot on or near the line: Go straight or special action!")
-            else:
-                print("No valid green dots near junction.")
+            elif len(filtered_dots) == 0:
+                print("No Green Dots! Drive Forward!.")
 
         return threshold, output_frame, cx_list, green_mask
 
@@ -166,12 +170,6 @@ class LineFollow:
                 time2 = time.time()
                 print(f"FPS: {1 / (time2 - time1):.2f}")
 
-                cv2.imshow("Threshold", threshold_img)
-                cv2.imshow("Green Mask", green_mask)
-                cv2.imshow("Visualization", visualized_frame)
-
-                if cv2.waitKey(1) & 0xFF == ord('q'):
-                    break
 
         except KeyboardInterrupt:
             print("Interrupted by user")
@@ -179,7 +177,7 @@ class LineFollow:
 
         finally:
             self.cap.release()
-            cv2.destroyAllWindows()
+            self.saver.close_file()
 
 if __name__ == "__main__":
     robot = LineFollow()
