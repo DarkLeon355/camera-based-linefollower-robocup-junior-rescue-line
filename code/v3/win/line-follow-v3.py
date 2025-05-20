@@ -19,12 +19,11 @@ class LineFollow:
         # Camera setup
         self.cap = cv2.VideoCapture(0)
         self.saver = save_img.save_img()
-        self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
-        self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+        self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 400)
+        self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 300)
 
-    def set_motor_speed(self, left_speed, right_speed):
-        # Placeholder for motor control
-        pass
+        self.turningflag = 0  # Add this if not present
+
 
     def process_frame(self, frame):
         # Convert to HSV to detect green
@@ -63,6 +62,11 @@ class LineFollow:
         junction_center = None
         output_frame = frame.copy()
         if cnts:
+            #draw the lines of the juction if they are found
+            for cnt in cnts:
+                area = cv2.contourArea(cnt)
+                if area > self.MIN_LINE_AREA:
+                    cv2.drawContours(output_frame, [cnt], -1, (0, 255, 0), 3)
             largest_joint = max(cnts, key=cv2.contourArea)
             M = cv2.moments(largest_joint)
             if M["m00"] != 0:
@@ -100,11 +104,6 @@ class LineFollow:
         output = (self.Kp * error) + (self.Ki * self.integral) + (self.Kd * derivative)
         self.previous_error = error
 
-        base_speed = 50
-        left_speed = base_speed - output
-        right_speed = base_speed + output
-        self.set_motor_speed(left_speed, right_speed)
-
         # Detect green dots and act
         green_contours, _ = cv2.findContours(green_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         green_dots = []
@@ -126,18 +125,26 @@ class LineFollow:
                     filtered_dots.append(dot)
             if len(filtered_dots) > 0:
                 for dot in filtered_dots: cv2.circle(output_frame, dot, 5, (0, 0, 255), -1)
-            if len(filtered_dots) == 2:
+            if len(filtered_dots) == 2 and self.turningflag == 0:
                 print("Turn 180°!")
-            elif len(filtered_dots) == 1:
+                # self.motor.turn_around()
+                print("Simulated: turn_around()")
+            elif len(filtered_dots) == 1 and self.turningflag == 0:
                 cx_green, cy_green = filtered_dots[0]
                 closest_idx = np.argmin(np.abs(np.array(y_levels) - cy_green))
                 cx_at_green = cx_list[closest_idx]
                 if cx_green < cx_at_green - 20:
                     print("Green dot left of the line: Turn left!")
+                    # self.motor.left()
+                    print("Simulated: left()")
                 elif cx_green > cx_at_green + 20:
                     print("Green dot right of the line: Turn right!")
+                    # self.motor.right()
+                    print("Simulated: right()")
             elif len(filtered_dots) == 0:
                 print("No Green Dots! Drive Forward!.")
+                # self.motor.forward()
+                print("Simulated: forward()")
 
         return threshold, output_frame, cx_list, green_mask
 
@@ -165,6 +172,10 @@ class LineFollow:
                 cx_avg = cx_sum // valid_cx_count if valid_cx_count != 0 else 0
 
                 print(f"Average cx: {cx_avg}\n")
+
+                # motors.run(self.motor, width, cx_avg)
+                print(f"Simulated: motors.run(width={width}, cx_avg={cx_avg})")
+
                 self.saver.save(visualized_frame, frame, cx_avg)
 
                 time2 = time.time()

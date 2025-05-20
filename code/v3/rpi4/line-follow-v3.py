@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 import save_img
 import time
+import motors
 
 class LineFollow:
     def __init__(self):
@@ -11,6 +12,7 @@ class LineFollow:
         self.Kd = 0.2
         self.previous_error = 0
         self.integral = 0
+        self.motor = motors.Motors()  # Initialize motors
 
         # Minimum green dot area to filter noise
         self.MIN_GREEN_DOT_AREA = 400
@@ -21,10 +23,6 @@ class LineFollow:
         self.saver = save_img.save_img()
         self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
         self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
-
-    def set_motor_speed(self, left_speed, right_speed):
-        # Placeholder for motor control
-        pass
 
     def process_frame(self, frame):
         # Convert to HSV to detect green
@@ -63,6 +61,11 @@ class LineFollow:
         junction_center = None
         output_frame = frame.copy()
         if cnts:
+            #draw the lines of the juction if they are found
+            for cnt in cnts:
+                area = cv2.contourArea(cnt)
+                if area > self.MIN_LINE_AREA:
+                    cv2.drawContours(output_frame, [cnt], -1, (0, 255, 0), 3)
             largest_joint = max(cnts, key=cv2.contourArea)
             M = cv2.moments(largest_joint)
             if M["m00"] != 0:
@@ -126,18 +129,31 @@ class LineFollow:
                     filtered_dots.append(dot)
             if len(filtered_dots) > 0:
                 for dot in filtered_dots: cv2.circle(output_frame, dot, 5, (0, 0, 255), -1)
-            if len(filtered_dots) == 2:
+            if len(filtered_dots) == 2 and self.turningflag == 0:
                 print("Turn 180°!")
-            elif len(filtered_dots) == 1:
+                # Measure the revolution of the motor to match
+                self.motor.turn_around()
+            elif len(filtered_dots) == 1 and self.turningflag == 0:
                 cx_green, cy_green = filtered_dots[0]
                 closest_idx = np.argmin(np.abs(np.array(y_levels) - cy_green))
                 cx_at_green = cx_list[closest_idx]
                 if cx_green < cx_at_green - 20:
                     print("Green dot left of the line: Turn left!")
+                    self.motor.left()
+                    # Measure the revolution of the motor to match
+
+
                 elif cx_green > cx_at_green + 20:
                     print("Green dot right of the line: Turn right!")
+                    self.motor.right()
+                    # Measure the revolution of the motor to match
+                    
+
             elif len(filtered_dots) == 0:
                 print("No Green Dots! Drive Forward!.")
+                self.motor.forward()
+                
+      
 
         return threshold, output_frame, cx_list, green_mask
 
@@ -165,11 +181,13 @@ class LineFollow:
                 cx_avg = cx_sum // valid_cx_count if valid_cx_count != 0 else 0
 
                 print(f"Average cx: {cx_avg}\n")
+
+                motors.run(self.motor, width, cx_avg)
+
                 self.saver.save(visualized_frame, frame, cx_avg)
 
                 time2 = time.time()
                 print(f"FPS: {1 / (time2 - time1):.2f}")
-
 
         except KeyboardInterrupt:
             print("Interrupted by user")
