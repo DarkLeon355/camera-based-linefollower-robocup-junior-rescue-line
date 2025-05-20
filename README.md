@@ -1,6 +1,6 @@
 # camera-based-linefollower-robocup-junior-rescue-line
 ---
-## Current Version: v3 beta
+## Current Version: v3
 ---
 ## - Whats new?
 ### + Junktion center detection
