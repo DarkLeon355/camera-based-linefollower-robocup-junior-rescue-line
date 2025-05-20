@@ -25,7 +25,7 @@
 ### This code currently only works on (tested):
 | Platform | v2 | v3 |
 |:----------------:|:-------:|:-------:|
-|Windows 10 and higher|✅|❌|
+|Windows 10 and higher|✅|✅|
 |Raspberry Pi 4b 2GB and higher|✅|✅|
 ---
 ## Robocup Junior Rescue Line:
