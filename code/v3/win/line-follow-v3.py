@@ -14,7 +14,7 @@ class LineFollow:
 
         # Minimum green dot area to filter noise
         self.MIN_GREEN_DOT_AREA = 400
-        self.MIN_LINE_AREA = 200
+        self.MIN_LINE_AREA = 100
 
         # Camera setup
         self.cap = cv2.VideoCapture(0)
@@ -79,20 +79,41 @@ class LineFollow:
         height, width = threshold.shape
         y_levels = np.linspace(int(height * 0.05), int(height * 0.90), 15, dtype=int)
         cx_list = []
+        prev_cx = width // 2  # Start from the center
+        JUNCTION_TOLERANCE_Y = 25  # vertical tolerance in pixels
+        JUNCTION_TOLERANCE_X = 25  # horizontal tolerance in pixels
+
         for y in y_levels:
             y_start = max(0, y - 2)
             y_end = min(height, y + 3)
             slice_line = threshold[y_start:y_end, :]
             contours, _ = cv2.findContours(slice_line, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-            cx = width // 2
+            cx = prev_cx  # Default to previous cx
             if contours:
+                # Filter by area
                 large_contours = [cnt for cnt in contours if cv2.contourArea(cnt) > self.MIN_LINE_AREA]
                 if large_contours:
-                    largest = max(large_contours, key=cv2.contourArea)
-                    M = cv2.moments(largest)
-                    if M["m00"] != 0:
-                        cx = int(M["m10"] / M["m00"])
+                    # Find contour whose centroid is closest to prev_cx
+                    min_dist = float('inf')
+                    best_cx = prev_cx
+                    for cnt in large_contours:
+                        M = cv2.moments(cnt)
+                        if M["m00"] != 0:
+                            test_cx = int(M["m10"] / M["m00"])
+                            dist = abs(test_cx - prev_cx)
+                            if dist < min_dist:
+                                min_dist = dist
+                                best_cx = test_cx
+                    cx = best_cx
+            # --- Force cx to junction center if within tolerance of the junction in both axes ---
+            if (
+                junction_center is not None and
+                abs(y - junction_center[1]) < JUNCTION_TOLERANCE_Y and
+                abs(cx - junction_center[0]) < JUNCTION_TOLERANCE_X
+            ):
+                cx = junction_center[0]
             cx_list.append(cx)
+            prev_cx = cx  # Update for next slice
             cv2.circle(output_frame, (cx, y), 5, (0, 255, 0), -1)
 
         # Calculate PID output
@@ -145,6 +166,14 @@ class LineFollow:
                 print("No Green Dots! Drive Forward!.")
                 # self.motor.forward()
                 print("Simulated: forward()")
+
+        k, d = np.polyfit(np.array(cx_list), np.array(y_levels), 1)
+        # y = k * x + d
+
+        lower_func_point = int(k * 0 + d)
+        upper_func_point = int(k * width + d)
+        cv2.line(output_frame, (0, lower_func_point), (width, upper_func_point), (255, 0, 0), 2)
+
 
         return threshold, output_frame, cx_list, green_mask
 
