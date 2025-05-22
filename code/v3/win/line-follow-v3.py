@@ -15,6 +15,8 @@ class LineFollow:
         # Minimum green dot area to filter noise
         self.MIN_GREEN_DOT_AREA = 400
         self.MIN_LINE_AREA = 100
+        self.JUNCTION_TOLERANCE_Y = 25  # vertical tolerance in pixels
+        self.JUNCTION_TOLERANCE_X = 25  # horizontal tolerance in pixels
 
         # Camera setup
         self.cap = cv2.VideoCapture(0)
@@ -80,8 +82,7 @@ class LineFollow:
         y_levels = np.linspace(int(height * 0.05), int(height * 0.90), 15, dtype=int)
         cx_list = []
         prev_cx = width // 2  # Start from the center
-        JUNCTION_TOLERANCE_Y = 25  # vertical tolerance in pixels
-        JUNCTION_TOLERANCE_X = 25  # horizontal tolerance in pixels
+    
 
         for y in y_levels:
             y_start = max(0, y - 2)
@@ -108,10 +109,10 @@ class LineFollow:
             # --- Force cx to junction center if within tolerance of the junction in both axes ---
             if (
                 junction_center is not None and
-                abs(y - junction_center[1]) < JUNCTION_TOLERANCE_Y and
-                abs(cx - junction_center[0]) < JUNCTION_TOLERANCE_X
-            ):
-                cx = junction_center[0]
+                abs(y - junction_center[1]) < self.JUNCTION_TOLERANCE_Y and
+                abs(cx - junction_center[0]) < self.JUNCTION_TOLERANCE_X
+                ): cx = junction_center[0]
+
             cx_list.append(cx)
             prev_cx = cx  # Update for next slice
             cv2.circle(output_frame, (cx, y), 5, (0, 255, 0), -1)
@@ -126,53 +127,56 @@ class LineFollow:
         self.previous_error = error
 
         # Detect green dots and act
-        green_contours, _ = cv2.findContours(green_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        green_dots = []
+        green_contours, _ = cv2.findContours(green_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE) #grüne konturen finden
+        green_dots = [] # liste für die grünen Parts
         for cnt in green_contours:
-            area = cv2.contourArea(cnt)
-            if area > self.MIN_GREEN_DOT_AREA:
+            area = cv2.contourArea(cnt) # fläche der kontur
+            if area > self.MIN_GREEN_DOT_AREA: # nur wenn die kontur groß genug ist
                 M_green = cv2.moments(cnt)
                 if M_green["m00"] != 0:
-                    cx_green = int(M_green["m10"] / M_green["m00"])
-                    cy_green = int(M_green["m01"] / M_green["m00"])
-                    green_dots.append((cx_green, cy_green))
+                    cx_green = int(M_green["m10"] / M_green["m00"]) # center x koordinate berechnen
+                    cy_green = int(M_green["m01"] / M_green["m00"]) # center y koordinate berechnen
+                    green_dots.append((cx_green, cy_green)) # die beiden koordinaten in die liste machen
 
 
-        if junction_center:
-            junction_x, junction_y = junction_center
-            filtered_dots = []
+        if junction_center: #wenn eine junction detected worden ist
+            junction_x, junction_y = junction_center # den mittelpunkt der kreuzung holen
+            filtered_dots = [] # list für die grünen punkte unter der kreuzung
             for dot in green_dots:
                 if dot[1] > junction_y:
-                    filtered_dots.append(dot)
+                    filtered_dots.append(dot) # es werden nur die grünen punkte unter der kreuzung gespeichert
             if len(filtered_dots) > 0:
-                for dot in filtered_dots: cv2.circle(output_frame, dot, 5, (0, 0, 255), -1)
-            if len(filtered_dots) == 2 and self.turningflag == 0:
+                for dot in filtered_dots: cv2.circle(output_frame, dot, 5, (0, 0, 255), -1) # visualisierung der zu beachtenden grünen punkte
+
+            # basierend auf den grünen punkten unter der kreuzung wird entschieden, was zu tun ist
+
+            if len(filtered_dots) == 2 and self.turningflag == 0: # 2 grüne punkte = 180 degree drehung
                 print("Turn 180°!")
-                # self.motor.turn_around()
                 print("Simulated: turn_around()")
-            elif len(filtered_dots) == 1 and self.turningflag == 0:
-                cx_green, cy_green = filtered_dots[0]
-                closest_idx = np.argmin(np.abs(np.array(y_levels) - cy_green))
-                cx_at_green = cx_list[closest_idx]
-                if cx_green < cx_at_green - 20:
+
+            elif len(filtered_dots) == 1 and self.turningflag == 0: # 1 grüner punkt -> determiinieren, ob links oder rechts
+                cx_green, cy_green = filtered_dots[0] # koordinaten des grünen punktes holen
+                closest_idx = np.argmin(np.abs(np.array(y_levels) - cy_green)) # den nähsten y_level der cx_list (schwarze linie) suchen
+                cx_at_green = cx_list[closest_idx] # den cx der schwarzen linie an der y_position des grünen punktes holen
+
+                if cx_green < cx_at_green - 20: # wenn das grün links von der schwarzen linie ist
                     print("Green dot left of the line: Turn left!")
-                    # self.motor.left()
                     print("Simulated: left()")
-                elif cx_green > cx_at_green + 20:
+
+                elif cx_green > cx_at_green + 20: # wenn das grün rechts von der schwarzen linie ist
                     print("Green dot right of the line: Turn right!")
-                    # self.motor.right()
                     print("Simulated: right()")
-            elif len(filtered_dots) == 0:
+
+            elif len(filtered_dots) == 0: # wenn keine linie gefunden wird gehts weiter
                 print("No Green Dots! Drive Forward!.")
-                # self.motor.forward()
                 print("Simulated: forward()")
 
-        k, d = np.polyfit(np.array(cx_list), np.array(y_levels), 1)
+        k, d = np.polyfit(np.array(cx_list), np.array(y_levels), 1) #lineare funktion basierend auf den werten der schwarzen linie
         # y = k * x + d
 
         lower_func_point = int(k * 0 + d)
         upper_func_point = int(k * width + d)
-        cv2.line(output_frame, (0, lower_func_point), (width, upper_func_point), (255, 0, 0), 2)
+        cv2.line(output_frame, (0, lower_func_point), (width, upper_func_point), (255, 0, 0), 2) # lineare funktion zeichnen
 
 
         return threshold, output_frame, cx_list, green_mask
