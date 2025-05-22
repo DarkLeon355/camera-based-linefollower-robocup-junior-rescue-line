@@ -5,6 +5,7 @@
 ## - Whats new?
 ### + Junktion center detection
 ### + Handling of 3 green dots
+### + Generation of a linear function based on the black line
 ---
 ## Whats working right now?
 | Object           | In Work | Working |
