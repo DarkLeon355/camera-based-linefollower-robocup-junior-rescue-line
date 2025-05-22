@@ -23,11 +23,7 @@
 |Motor control |✅|❌|
 ---
 ## Compatability
-### This code currently only works on (tested):
-| Platform | v2 | v3 |
-|:----------------:|:-------:|:-------:|
-|Windows 10 and higher|✅|✅|
-|Raspberry Pi 4b 2GB and higher|✅|✅|
+### This code is designed for running on a single-board-computer like the Raspberry Pi. But it might also work on other systems.
 ---
 ## Robocup Junior Rescue Line:
 ### Its our goal to compete at Robocup Junior Rescue Line 2025 in Innsbruck 🏔️🇦🇹.
