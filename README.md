@@ -1,12 +1,5 @@
 # camera-based-linefollower
 ---
-## Current Version: v3
----
-## - Whats new?
-### + Junktion center detection
-### + Handling of 3 green dots
-### + Generation of a linear function based on the black line
----
 ## Whats working right now?
 | Object           | In Work | Working |
 |:----------------:|:-------:|:-------:|
@@ -17,7 +10,7 @@
 |Green - Turn left|❌|✅|
 |Green - Turn right|❌|✅|
 |Green - 180° Turn|❌|✅|
-|Green - More than 3 dots|✅|✅|
+|Green - More than 3 dots|❌|✅|
 |Obstacle avoidance|❌|❌|
 |Rescue-zone detection |❌|❌|
 |Motor control |✅|❌|
