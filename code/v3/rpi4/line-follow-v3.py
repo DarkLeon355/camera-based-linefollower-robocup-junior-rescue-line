@@ -18,8 +18,8 @@ class LineFollow:
         self.MIN_GREEN_DOT_AREA = 400
         self.MIN_LINE_AREA = 100
         self.MIN_JUNCTION_AREA = 3000  # or another suitable value
-        self.JUNCTION_TOLERANCE_Y = 200
-        self.JUNCTION_TOLERANCE_X = 200
+        self.JUNCTION_TOLERANCE_Y = 200 #move all cx to the junction center if within this tolerance
+        self.center_tolerance_y = 30  # only turn if the junction is within this tolerance
 
         self.cap = cv2.VideoCapture(0)
         self.saver = save_img.save_img()
@@ -140,9 +140,9 @@ class LineFollow:
                 cx_at_green = cx_list[closest_idx]
                 junction_x, junction_y = junction_center
                 frame_center_y = height // 2
-                center_tolerance_y = 30  # Adjust as needed
 
-                if abs(junction_y - frame_center_y) < center_tolerance_y:
+
+                if abs(junction_y - frame_center_y) < self.center_tolerance_y:
                     if cx_green < cx_at_green - 20:
                         print("Green dot left of the line: Turn left!")
                         print("Simulated: left()")
@@ -192,11 +192,11 @@ class LineFollow:
 
                 print(f"Average cx: {cx_avg}\n")
 
-                Angle = np.arctan(self.k)
+                radians = np.arctan(self.k)
 
-                print(np.degrees(Angle), "degrees")
+                print(np.degrees(radians), "degrees")
 
-                self.saver.save(visualized_frame, frame, Angle)
+                self.saver.save(visualized_frame, frame, radians)
 
                 time2 = time.time()
                 print(f"FPS: {1 / (time2 - time1):.2f}")
