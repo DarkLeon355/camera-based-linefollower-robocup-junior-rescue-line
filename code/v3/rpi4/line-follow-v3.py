@@ -18,7 +18,7 @@ class LineFollow:
         self.MIN_GREEN_DOT_AREA = 400
         self.MIN_LINE_AREA = 100
         self.MIN_JUNCTION_AREA = 3000  # or another suitable value
-        self.JUNCTION_TOLERANCE_Y = 200 #move all cx to the junction center if within this tolerance
+        self.JUNCTION_TOLERANCE_Y = 100 #move all cx to the junction center if within this tolerance
         self.center_tolerance_y = 30  # only turn if the junction is within this tolerance
 
         self.cap = cv2.VideoCapture(0)
@@ -103,6 +103,7 @@ class LineFollow:
                     cv2.circle(output_frame, (cx, y), 5, (0, 255, 0), -1)
 
         if cx_list:
+            self.cx_avg = sum(cx_list) // len(cx_list)
             frame_center = width // 2
             errors = [cx - frame_center for cx in cx_list]
             error = int(np.mean(errors))
@@ -111,6 +112,14 @@ class LineFollow:
             derivative = error - self.previous_error
             output = (self.Kp * error) + (self.Ki * self.integral) + (self.Kd * derivative)
             self.previous_error = error
+            if len(cx_list) >= 2:
+                self.k, self.d = np.polyfit(np.array(cx_list), np.array(y_levels[:len(cx_list)]), 1)
+                lower_func_point = int(self.k * 0 + self.d)
+                upper_func_point = int(self.k * width + self.d)
+                cv2.line(output_frame, (0, lower_func_point), (width, upper_func_point), (255, 0, 0), 2)
+                self.radians = np.arctan(self.k)
+
+
 
         green_contours, _ = cv2.findContours(green_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         green_dots = []
@@ -153,18 +162,19 @@ class LineFollow:
                         #motors.right90()
                 else: 
                     print("Not yet in the center of the junction")
-                    #motors.run(width, cx_avg)  # Simulated forward movement
+                    #motors.run(width, self.cx_avg)  # Simulated forward movement
 
             elif len(filtered_dots) == 0:
                 print("No Green Dots! Drive Forward!.")
                 print("Simulated: forward()")
-                #motors.run(width, cx_avg)
+                #motors.run(width, self.cx_avg)
 
-        if len(cx_list) >= 2:
-            self.k, self.d = np.polyfit(np.array(cx_list), np.array(y_levels[:len(cx_list)]), 1)
-            lower_func_point = int(self.k * 0 + self.d)
-            upper_func_point = int(self.k * width + self.d)
-            cv2.line(output_frame, (0, lower_func_point), (width, upper_func_point), (255, 0, 0), 2)
+        elif junction_center is None and cx_list:
+            print("Currently no junction")
+            #motors.run(width, self.cx_avg)  # Simulated forward movement
+
+
+
 
         return threshold, output_frame, cx_list, green_mask
 
@@ -184,19 +194,11 @@ class LineFollow:
                 threshold_img, visualized_frame, x_values, green_mask = self.process_frame(frame)
 
                 height, width, _ = frame.shape
-                if x_values:
-                    cx_avg = sum(x_values) // len(x_values)
-                else:
-                    cx_avg = width // 2
+        
+                print(f"Average cx: {self.cx_avg}\n")
+                print(np.degrees(self.radians), "degrees")
 
-
-                print(f"Average cx: {cx_avg}\n")
-
-                radians = np.arctan(self.k)
-
-                print(np.degrees(radians), "degrees")
-
-                self.saver.save(visualized_frame, frame, radians)
+                self.saver.save(visualized_frame, frame, self.radians)
 
                 time2 = time.time()
                 print(f"FPS: {1 / (time2 - time1):.2f}")
