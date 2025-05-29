@@ -1,5 +1,6 @@
-import smbus
+import smbus2 as smbus
 import time
+import numpy as np
 
 
 class MPU6050:
@@ -15,6 +16,8 @@ class MPU6050:
 
         self.bus = smbus.SMBus(1)  # Use I2C bus 1 on Pi 4
         self.MPU_Init()
+        self.GYRO_THRESHOLD = 5
+        self.yaw_angle = 0  # Track total angle over time
 
     def MPU_Init(self):
         self.bus.write_byte_data(self.Device_Address, self.SMPLRT_DIV, 7)
@@ -35,24 +38,29 @@ class MPU6050:
         raw_z = self.read_raw_data(self.GYRO_ZOUT_H)
         return raw_z / 16.4  # Convert to degrees/sec (±2000°/s sensitivity)
 
+    def update_angle(self, previous_time):
+        gyro_z = self.get_gyro_z()
+        self.current_time = time.time()
+        dt = self.current_time - previous_time
+
+        # Only add to yaw angle if rotation is above threshold
+        if abs(gyro_z) > self.GYRO_THRESHOLD:
+            self.yaw_angle += gyro_z * dt
+        
+        return self.yaw_angle
 
 
-# Example for turning 90 degrees
-"""
-
+# Main program
 sensor = MPU6050()
-yaw_angle = 0
-last_time = time.time()
+previous_time = time.time()
+
+try:
+    while True:
+        current_angle = sensor.update_angle(previous_time)
+        print(f"Yaw Angle: {current_angle:.2f}°")
+        previous_time = sensor.current_time
+        time.sleep(0.01)  # Small delay to prevent CPU overuse
+except KeyboardInterrupt:
+    print("Program stopped by user")
 
 
-while turning:
-    gyro_z = sensor.get_gyro_z()        # °/s
-    current_time = time.time()
-    dt = current_time - last_time       # seconds
-
-    yaw_angle += gyro_z * dt            # degrees
-    last_time = current_time
-
-    if abs(yaw_angle) >= 90:
-        print("Stop turn")
-""" 
